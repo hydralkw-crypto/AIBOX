@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:textColor="@color/text_primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp" />
+
+    <Button android:id="@+id/btnOverlayPermission"
+        style="@style/AiboxHomeButton"
+        android:layout_width="match_parent"
+        android:text="@string/grant_permission" />
+
+    <TextView
+        android:id="@+id/overlayStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="24dp"
+        android:text="Overlay permission: checking..." />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Floating Window"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Button android:id="@+id/btnMinimizeFloating"
+        style="@style/AiboxHomeButton"
+        android:layout_width="match_parent"
+        android:text="تصغير النافذة العائمة" />
+
+    <Button android:id="@+id/btnCloseFloating"
+        style="@style/AiboxHomeButton"
+        android:layout_width="match_parent"
+        android:background="@color/danger"
+        android:text="إغلاق النافذة العائمة"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/floatingStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="24dp"
+        android:text="لا توجد نافذة عائمة نشطة حاليًا" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Spotify Account"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Button android:id="@+id/btnConnectSpotify"
+        style="@style/AiboxHomeButton"
+        android:layout_width="match_parent"
+        android:text="Connect Spotify Account" />
+
+    <TextView
+        android:id="@+id/spotifyStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:text="Not connected. Requires a Spotify Developer Client ID (see README)." />
+
+</LinearLayout>

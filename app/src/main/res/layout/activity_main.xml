@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textColor="@color/text_primary"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="40dp" />
+
+    <Button android:id="@+id/btnTikTok"
+        style="@style/AiboxHomeButton"
+        android:text="@string/tiktok" />
+
+    <Button android:id="@+id/btnSpotify"
+        style="@style/AiboxHomeButton"
+        android:text="@string/spotify" />
+
+    <Button android:id="@+id/btnMyVideos"
+        style="@style/AiboxHomeButton"
+        android:text="@string/my_videos" />
+
+    <Button android:id="@+id/btnSettings"
+        style="@style/AiboxHomeButton"
+        android:text="@string/settings" />
+
+</LinearLayout>

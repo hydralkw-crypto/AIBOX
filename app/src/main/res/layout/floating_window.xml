@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/floatingRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/bg_dark">
+
+    <!-- شريط علوي: يستخدم لسحب النافذة -->
+    <LinearLayout
+        android:id="@+id/dragBar"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@color/surface_dark"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:id="@+id/serviceNameLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AIBOX"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+
+        <ImageButton android:id="@+id/btnFullscreen"
+            android:layout_width="36dp" android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_view"
+            android:contentDescription="Fullscreen" />
+
+        <ImageButton android:id="@+id/btnMinimize"
+            android:layout_width="36dp" android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/arrow_down_float"
+            android:contentDescription="Minimize" />
+
+        <ImageButton android:id="@+id/btnClose"
+            android:layout_width="36dp" android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="Close" />
+    </LinearLayout>
+
+    <!-- محتوى الخدمة -->
+    <FrameLayout
+        android:id="@+id/contentFrame"
+        android:layout_width="360dp"
+        android:layout_height="560dp">
+
+        <WebView
+            android:id="@+id/floatingWebView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ProgressBar
+            android:id="@+id/loadingSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+    </FrameLayout>
+
+    <!-- مقبض تغيير الحجم -->
+    <View
+        android:id="@+id/resizeHandle"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="end"
+        android:background="@color/accent" />
+
+</LinearLayout>
