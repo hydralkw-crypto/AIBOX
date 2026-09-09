@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">AIBOX</string>
+    <string name="tiktok">TikTok</string>
+    <string name="spotify">Spotify</string>
+    <string name="my_videos">My Videos</string>
+    <string name="settings">Settings</string>
+    <string name="floating_hint">اضغط مطولاً لتحريك النافذة، واسحب من الزاوية لتغيير الحجم</string>
+    <string name="overlay_permission_needed">يحتاج AIBOX إذن الظهور فوق التطبيقات لتفعيل النافذة العائمة</string>
+    <string name="grant_permission">منح الإذن</string>
+</resources>
