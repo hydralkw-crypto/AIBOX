@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.TypedValue
 import android.view.*
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -120,13 +121,17 @@ class FloatingWindowService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType(),
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            // لا نضع FLAG_NOT_FOCUSABLE هنا: هذا العلم كان يمنع ظهور الكيبورد
+            // نهائيًا عند الضغط على أي مربع بحث داخل الـ WebView (مشكلة سبوتيفاي/تيك توك)
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP or Gravity.START
         params.x = savedX
         params.y = savedY
+        // يخلي الكيبورد يرفع المحتوى بدل ما يغطيه، ويسمح للكيبورد بالظهور فوق نافذة عائمة
+        params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 
         view.findViewById<TextView>(R.id.serviceNameLabel).text = target.label
 
@@ -150,7 +155,13 @@ class FloatingWindowService : Service() {
             stopSelf()
         }
 
-        windowManager.addView(view, params)
+        try {
+            windowManager.addView(view, params)
+        } catch (e: Exception) {
+            // إذا صار أي خطأ أثناء الإضافة، ننظف بدل ما نترك عنصر عالق بالشاشة
+            floatingView = null
+            releaseWebView()
+        }
     }
 
     private fun setupWebView(root: View) {
@@ -163,9 +174,37 @@ class FloatingWindowService : Service() {
         webView.settings.useWideViewPort = true
         // تخفيف استهلاك الذاكرة: لا كاش ضخم غير ضروري
         webView.settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+        // يسمح بتشغيل الفيديو/الصوت تلقائيًا بدون لمسة أولى (تيك توك وسبوتيفاي يحتاجونها)
+        webView.settings.mediaPlaybackRequiresUserGesture = false
+        // يسمح بتحميل بعض الموارد المختلطة اللي تستخدمها هذي المواقع أحيانًا
+        webView.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 spinner.visibility = View.GONE
+            }
+
+            // تيك توك (وكثير من المواقع) تحاول تحوّلك لروابط خاصة مثل intent:// أو
+            // مخططات تطبيقات مثبتة، لأهداف تتبع/تحويل. الـ WebView ما يفهم هذي
+            // الروابط أصلًا فتنهار الصفحة بخطأ ERR_UNKNOWN_URL_SCHEME. الحل: نتعامل
+            // معها بأمان بدل ما نخليها تكسر الصفحة.
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                val requestUrl = request?.url?.toString() ?: return false
+                if (requestUrl.startsWith("http://") || requestUrl.startsWith("https://")) {
+                    return false // اتركه يفتح عادي داخل نفس الـ WebView
+                }
+                // رابط بمخطط خاص (intent://, tiktok://, snssdk...://, إلخ) - نتجاهله بأمان
+                return try {
+                    val externalIntent = Intent.parseUri(requestUrl, Intent.URI_INTENT_SCHEME)
+                    externalIntent.resolveActivity(packageManager)?.let {
+                        startActivity(externalIntent)
+                    }
+                    true
+                } catch (e: Exception) {
+                    true // نتجاهله فقط بدل ما نطلع صفحة خطأ
+                }
             }
         }
         webView.loadUrl(target.url)
@@ -263,7 +302,7 @@ class FloatingWindowService : Service() {
     // ---------- التصغير إلى أيقونة ----------
 
     private fun minimize(lastParams: WindowManager.LayoutParams) {
-        floatingView?.let { windowManager.removeView(it) }
+        floatingView?.let { runCatching { windowManager.removeView(it) } }
         floatingView = null
         // نحرر WebView بالكامل أثناء التصغير - صفر استهلاك CPU/RAM طالما الأيقونة فقط ظاهرة
         releaseWebView()
@@ -307,11 +346,15 @@ class FloatingWindowService : Service() {
             }
         }
 
-        windowManager.addView(bubble, bubbleParams)
+        try {
+            windowManager.addView(bubble, bubbleParams)
+        } catch (e: Exception) {
+            bubbleView = null
+        }
     }
 
     private fun restoreFromBubble(bubbleParams: WindowManager.LayoutParams) {
-        bubbleView?.let { windowManager.removeView(it) }
+        bubbleView?.let { runCatching { windowManager.removeView(it) } }
         bubbleView = null
         prefs.edit()
             .putInt("${target.name}_x", bubbleParams.x)
@@ -329,7 +372,7 @@ class FloatingWindowService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "AIBOX Floating Window", NotificationManager.IMPORTANCE_MIN
+                CHANNEL_ID, "AIBOX Floating Window", NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
