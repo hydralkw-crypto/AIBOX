@@ -90,7 +90,7 @@ class FloatingWindowService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val targetName = intent?.getStringExtra(EXTRA_TARGET) ?: ServiceTarget.TIKTOK.name
+        val targetName = intent?.getStringExtra(EXTRA_TARGET) ?: ServiceTarget.SPOTIFY.name
         target = ServiceTarget.valueOf(targetName)
 
         startForeground(NOTIF_ID, buildNotification())
@@ -147,13 +147,6 @@ class FloatingWindowService : Service() {
 
         view.findViewById<ImageButton>(R.id.btnClose).setOnClickListener { stopSelf() }
         view.findViewById<ImageButton>(R.id.btnMinimize).setOnClickListener { minimize(params) }
-        view.findViewById<ImageButton>(R.id.btnFullscreen).setOnClickListener {
-            // نفتح الرابط الرسمي في المتصفح الافتراضي (أو تطبيق الخدمة إن كان مثبتًا) لعرضه بملء الشاشة
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(target.url))
-            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(browserIntent)
-            stopSelf()
-        }
 
         try {
             windowManager.addView(view, params)
@@ -178,6 +171,10 @@ class FloatingWindowService : Service() {
         webView.settings.mediaPlaybackRequiresUserGesture = false
         // يسمح بتحميل بعض الموارد المختلطة اللي تستخدمها هذي المواقع أحيانًا
         webView.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        // يحفظ الجلسة/تسجيل الدخول بشكل دائم على الجهاز - ما يحتاج تسجل دخولك كل مرة
+        val cookieManager = android.webkit.CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(webView, true)
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 spinner.visibility = View.GONE
@@ -212,6 +209,8 @@ class FloatingWindowService : Service() {
 
     /** يوقف كل نشاط الـ WebView ويحرر ذاكرته بالكامل - يُستدعى عند التصغير أو الإغلاق */
     private fun releaseWebView() {
+        // نتأكد إن الكوكيز (تسجيل الدخول) تنكتب على القرص فورًا قبل ما نحرر الـ WebView
+        android.webkit.CookieManager.getInstance().flush()
         currentWebView?.apply {
             stopLoading()
             onPause()
@@ -278,8 +277,16 @@ class FloatingWindowService : Service() {
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val newW = (startW + (event.rawX - touchX)).toInt().coerceAtLeast(dp(200))
-                    val newH = (startH + (event.rawY - touchY)).toInt().coerceAtLeast(dp(300))
+                    // حد أقصى: لا تتجاوز النافذة 90% من عرض/ارتفاع الشاشة - نخليها
+                    // محدودة بحدود واضحة بدل ما تنتشر على كامل خلفية الجهاز
+                    val screenW = resources.displayMetrics.widthPixels
+                    val screenH = resources.displayMetrics.heightPixels
+                    val maxW = (screenW * 0.9).toInt()
+                    val maxH = (screenH * 0.9).toInt()
+                    val newW = (startW + (event.rawX - touchX)).toInt()
+                        .coerceIn(dp(200), maxW)
+                    val newH = (startH + (event.rawY - touchY)).toInt()
+                        .coerceIn(dp(300), maxH)
                     contentFrame.layoutParams = contentFrame.layoutParams.apply {
                         width = newW
                         height = newH
@@ -322,6 +329,9 @@ class FloatingWindowService : Service() {
         bubbleParams.y = lastParams.y
 
         var initialX = 0; var initialY = 0; var touchX = 0f; var touchY = 0f; var moved = false
+        // أي حركة إصبع أقل من هذا الحد تعتبر "ضغطة" وليست سحبًا - هذا كان سبب
+        // عدم استجابة المربع للضغط: أبسط ارتجاف بالإصبع كان يُحتسب سحبًا
+        val touchSlop = android.view.ViewConfiguration.get(this).scaledTouchSlop
 
         bubble.findViewById<ImageView>(R.id.bubbleIcon).setOnTouchListener { _, event ->
             when (event.action) {
@@ -332,10 +342,16 @@ class FloatingWindowService : Service() {
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    bubbleParams.x = initialX + (event.rawX - touchX).toInt()
-                    bubbleParams.y = initialY + (event.rawY - touchY).toInt()
-                    windowManager.updateViewLayout(bubble, bubbleParams)
-                    moved = true
+                    val dx = event.rawX - touchX
+                    val dy = event.rawY - touchY
+                    if (!moved && (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop)) {
+                        moved = true
+                    }
+                    if (moved) {
+                        bubbleParams.x = initialX + dx.toInt()
+                        bubbleParams.y = initialY + dy.toInt()
+                        windowManager.updateViewLayout(bubble, bubbleParams)
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
