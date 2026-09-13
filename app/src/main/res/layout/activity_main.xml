@@ -24,6 +24,14 @@
         style="@style/AiboxHomeButton"
         android:text="@string/spotify" />
 
+    <Button android:id="@+id/btnYoutube"
+        style="@style/AiboxHomeButton"
+        android:text="YouTube" />
+
+    <Button android:id="@+id/btnLikee"
+        style="@style/AiboxHomeButton"
+        android:text="Likee" />
+
     <Button android:id="@+id/btnMyVideos"
         style="@style/AiboxHomeButton"
         android:text="@string/my_videos" />
